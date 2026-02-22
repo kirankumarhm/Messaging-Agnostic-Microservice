@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: event-processor
+  
+  cloud:
+    function:
+      definition: eventConsumer;processedEventConsumer
+    
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092,localhost:9094,localhost:9096
+          configuration:
+            schema.registry.url: http://localhost:8081
+        bindings:
+          eventProducer-out-0:
+            producer:
+              configuration:
+                key.serializer: org.apache.kafka.common.serialization.StringSerializer
+                value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+          eventConsumer-in-0:
+            consumer:
+              configuration:
+                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+                specific.avro.reader: true
+              enableDlq: true
+              dlqName: input-events-dlq
+          processedEventConsumer-in-0:
+            consumer:
+              configuration:
+                key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+                value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+                specific.avro.reader: true
+      
+      bindings:
+        eventProducer-out-0:
+          destination: processed-events
+        
+        eventConsumer-in-0:
+          destination: input-events
+          group: event-processor-group
+        
+        processedEventConsumer-in-0:
+          destination: processed-events
+          group: processed-consumer-group
+
+server:
+  port: 7070
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,bindings,schemaregistry
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.messaging: INFO
+    org.springframework.cloud.stream: DEBUG
+    org.springframework.cloud.stream.schema: DEBUG
