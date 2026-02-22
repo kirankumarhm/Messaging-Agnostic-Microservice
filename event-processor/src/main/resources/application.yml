@@ -1,0 +1,45 @@
+spring:
+  profiles:
+    active: kafka
+  application:
+    name: event-processor
+  cloud:
+    stream:
+      default-binder: kafka
+      bindings:
+        # Producer binding
+        eventProducer-out-0:
+          destination: processed-events
+          content-type: application/json
+        # Consumer binding
+        eventConsumer-in-0:
+          destination: input-events
+          content-type: application/json
+          group: event-processor-group
+      kafka:
+        binder:
+          brokers: localhost:9092, localhost:9094, localhost:9096
+        bindings:
+          eventConsumer-in-0:
+            consumer:
+              enableDlq: true
+              dlqName: input-events-dlq
+      function:
+        definition: eventConsumer;eventProducer
+
+server:
+  port: 7070
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,bindings
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.charter.elf: INFO
+    org.springframework.cloud.stream: DEBUG
