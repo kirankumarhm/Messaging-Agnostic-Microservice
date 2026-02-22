@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: event-processor
+  cloud:
+    gcp:
+      project-id: local-project
+      pubsub:
+        emulator-host: localhost:8085
+    function:
+      definition: eventConsumer;processedEventConsumer
+    stream:
+      default-binder: pubsub
+      bindings:
+        eventProducer-out-0:
+          destination: processed-events
+          content-type: application/json
+          binder: pubsub
+        eventConsumer-in-0:
+          destination: input-events
+          content-type: application/json
+          group: event-processor-group
+          binder: pubsub
+        processedEventConsumer-in-0:
+          destination: processed-events
+          content-type: application/json
+          group: processed-consumer-group
+          binder: pubsub
+
+server:
+  port: 7070
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,bindings
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.charter.elf: INFO
+    org.springframework.cloud.stream: DEBUG
+    com.google.cloud: DEBUG
